@@ -1,201 +1,228 @@
-import { useEffect, useState } from "react";
-import "./App.css";
+import React, { useState } from "react";
+import { v4 as uuidv4 } from "uuid";
 import QRCode from "qrcode";
-import { addDoc, collection } from "firebase/firestore";
-import { firestore, storage } from "../src/database/firebase"; // Corrected import path
-import { ref, uploadString } from "firebase/storage";
-import { getDownloadURL } from "firebase/storage";
-import { uploadBytesResumable } from "firebase/storage";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
+import { getStorage, ref, uploadString } from "firebase/storage";
+import { firebaseApp } from "./database/firebase";
+import tw from "tailwind-styled-components";
+
+const FormContainer = tw.div`
+  w-full
+  max-w-md
+  mx-auto
+  bg-white
+  p-8
+  rounded-xl
+  shadow-md
+  mt-16
+`;
+
+const Label = tw.label`
+  block
+  text-gray-700
+  font-bold
+  mb-1
+`;
+
+const Input = tw.input`
+  w-full
+  p-2
+  border
+  border-gray-300
+  rounded-md
+  focus:outline-none
+  focus:ring-2
+  focus:ring-blue-500
+  focus:border-blue-500
+`;
+
+const DateInput = tw(Input)`
+  bg-gray-200
+  text-gray-500
+`;
+
+const SubmitButton = tw.button`
+  w-full
+  p-2
+  bg-blue-500
+  text-white
+  font-bold
+  rounded-md
+  hover:bg-blue-600
+  focus:outline-none
+  focus:ring-2
+  focus:ring-blue-500
+  focus:ring-offset-2
+`;
 
 function App() {
-  const [formData1, setFormData1] = useState([]);
-  const [formData, setFormData] = useState({
-    dateAndTime: "",
-    studentEmail: "",
-    examRoom: "",
-    faculty: "",
-    firstName: "",
-    lastName: "",
-    moduleLeaderEmail: "",
-    moduleLeaderName: "",
-    moduleName: "",
-    phoneNumber: "",
-    room: "",
-    studentIDNumber: "",
-    table: "",
-  });
-  const [size, setSize] = useState(400);
-  const [bgColor, setBgColor] = useState("ffffff");
-  const [qrCode, setQrCode] = useState("");
+  const [dateAndTime, setDateAndTime] = useState(new Date());
+  const [examRoom, setExamRoom] = useState("");
+  const [faculty, setFaculty] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [moduleLeaderEmail, setModuleLeaderEmail] = useState("");
+  const [moduleLeaderName, setModuleLeaderName] = useState("");
+  const [moduleName, setModuleName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [room, setRoom] = useState("");
+  const [studentEmail, setStudentEmail] = useState("uhbbb@b.com");
+  const [studentIDNumber, setStudentIDNumber] = useState("");
+  const [table, setTable] = useState("");
 
-  // Changing the URL only when the user
-  useEffect(() => {
-    generateQRCode(formData);
-  }, [formData, size, bgColor]);
-
-  // Function to generate QR Code
-  const generateQRCode = async (formData) => {
-    try {
-      const qrData = JSON.stringify(formData);
-      const generatedQRCode = await QRCode.toDataURL(qrData, {
-        errorCorrectionLevel: "H",
-      });
-      setQrCode(generatedQRCode);
-    } catch (error) {
-      console.error("Error generating QR code:", error);
-    }
+  const generateQRCode = async () => {
+    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nModule Leader Email: ${moduleLeaderEmail}\nModule Leader Name: ${moduleLeaderName}\nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}`;
+    const qrCodeImage = await QRCode.toDataURL(qrCodeData);
+    return qrCodeImage;
   };
 
-  // Function to handle form input changes
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
-  };
+  const handleSubmit = async (firebaseApp) => {
+    const qrCodeImage = await generateQRCode();
+    const firestore = getFirestore(firebaseApp);
+    const storage = getStorage(firebaseApp);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const userDocRef = await addDoc(collection(firestore, "users"), {
+      dateAndTime: dateAndTime.toISOString(),
+      examRoom,
+      faculty,
+      firstName,
+      lastName,
+      moduleLeaderEmail,
+      moduleLeaderName,
+      moduleName,
+      phoneNumber,
+      room,
+      studentEmail,
+      studentIDNumber,
+      table,
+      qrCodeImage,
+    });
 
-    try {
-      const fundsCollection = collection(firestore, "onetesting");
-      await addDoc(fundsCollection, formData);
-
-      // Generate QR code image data URL
-      const qrData = JSON.stringify(formData);
-      const generatedQRCode = await QRCode.toDataURL(qrData, {
-        errorCorrectionLevel: "H",
-        width: size,
-        height: size,
-        color: {
-          dark: "#" + bgColor,
-          light: "#ffffff",
-        },
-      });
-
-      // Upload QR code image URL to Firebase Storage
-      const storageRef = ref(storage, `qrcodess/${formData.studentEmail}.png`);
-      await uploadString(storageRef, generatedQRCode, "data_url");
-
-      // Get download URL of the uploaded image
-      const downloadURL = await getDownloadURL(storageRef);
-
-      // Store download URL in Firestore
-      const docRef = await addDoc(collection(firestore, "downloadURLs"), {
-        downloadURL,
-        formData,
-      });
-
-      // Clear form data
-      setFormData({
-        dateAndTime: "",
-        studentEmail: "",
-        examRoom: "",
-        faculty: "",
-        firstName: "",
-        lastName: "",
-        moduleLeaderEmail: "",
-        moduleLeaderName: "",
-        moduleName: "",
-        phoneNumber: "",
-        room: "",
-        studentIDNumber: "",
-        table: "",
-      });
-
-      // Send email to the user with the download URL
-      const response = await fetch("/send-email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.studentEmail,
-          downloadURL, // Include the download URL in the email payload
-        }),
-      });
-
-      if (response.ok) {
-        console.log("Email sent successfully");
-      } else {
-        console.error("Failed to send email");
-      }
-
-      // Clear form data and QR code
-      setFormData({
-        /* Reset form data */
-      });
-      setQrCode(""); // Clear QR code
-    } catch (error) {
-      console.error("Error generating and uploading QR code:", error);
-      alert("Error generating and uploading QR code. Please try again.");
-    }
+    const storageRef = ref(storage, userDocRef.id);
+    await uploadString(storageRef, qrCodeImage, "data_url");
   };
 
   return (
-    <div className="App">
-      <div className="border border-red-500 p-10">
-        <div className="output-box mt-2">
-          <img src={qrCode} alt="" />
-          {/* <a href={qrCode} download="QRCode">
-        <button type="button">Download</button>
-      </a> */}
-        </div>
+    <FormContainer>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit(firebaseApp);
+        }}
+      >
+        <Label htmlFor="examRoom">Exam Room:</Label>
+        <Input
+          type="text"
+          id="examRoom"
+          value={examRoom}
+          onChange={(e) => setExamRoom(e.target.value)}
+        />
 
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          {/* Render form inputs */}
-          {Object.keys(formData).map((key) => (
-            <div key={key}>
-              <label
-                htmlFor={key}
-                className="block text-gray-700 text-sm font-bold mb-2"
-              >
-                {key}
-              </label>
-              <input
-                type="text"
-                id={key}
-                name={key}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder={`Enter ${key}`}
-                value={formData[key]}
-                onChange={handleInputChange}
-              />
-            </div>
-          ))}
-        </div>
+        <Label htmlFor="faculty">Faculty:</Label>
+        <Input
+          type="text"
+          id="faculty"
+          value={faculty}
+          onChange={(e) => setFaculty(e.target.value)}
+        />
 
-        <div className="flex p-5">
-          <div className="flex flex-auto">
-            <h5>Background Color:</h5>
-            <input
-              type="color"
-              onChange={(e) => {
-                setBgColor(e.target.value.substring(1));
-              }}
-            />
-          </div>
+        <Label htmlFor="firstName">First Name:</Label>
+        <Input
+          type="text"
+          id="firstName"
+          value={firstName}
+          onChange={(e) => setFirstName(e.target.value)}
+        />
 
-          <div className="flex flex-auto">
-            <h5>Dimension:</h5>
-            <input
-              type="range"
-              min="200"
-              max="600"
-              value={size}
-              onChange={(e) => {
-                setSize(e.target.value);
-              }}
-            />
-          </div>
-        </div>
+        <Label htmlFor="lastName">Last Name:</Label>
+        <Input
+          type="text"
+          id="lastName"
+          value={lastName}
+          onChange={(e) => setLastName(e.target.value)}
+        />
 
-        <button type="submit" className="bg-red-500 border border-black text-white" onClick={handleSubmit}>
-          Send Email
-        </button>
-      </div>
-    </div>
+        <Label htmlFor="moduleLeaderEmail">Module Leader Email:</Label>
+        <Input
+          type="email"
+          id="moduleLeaderEmail"
+          value={moduleLeaderEmail}
+          onChange={(e) => setModuleLeaderEmail(e.target.value)}
+        />
+
+        <Label htmlFor="moduleLeaderName">Module Leader Name:</Label>
+        <Input
+          type="text"
+          id="moduleLeaderName"
+          value={moduleLeaderName}
+          onChange={(e) => setModuleLeaderName(e.target.value)}
+        />
+
+        <Label htmlFor="moduleName">Module Name:</Label>
+        <Input
+          type="text"
+          id="moduleName"
+          value={moduleName}
+          onChange={(e) => setModuleName(e.target.value)}
+        />
+
+        <Label htmlFor="phoneNumber">Phone Number:</Label>
+        <Input
+          type="tel"
+          id="phoneNumber"
+          value={phoneNumber}
+          onChange={(e) => setPhoneNumber(e.target.value)}
+        />
+
+        <Label htmlFor="room">Room:</Label>
+        <Input
+          type="text"
+          id="room"
+          value={room}
+          onChange={(e) => setRoom(e.target.value)}
+        />
+
+        <Label htmlFor="studentEmail">Student Email:</Label>
+        <Input
+          type="email"
+          id="studentEmail"
+          value={studentEmail}
+          onChange={(e) => setStudentEmail(e.target.value)}
+        />
+
+        <Label htmlFor="studentIDNumber">Student ID Number:</Label>
+        <Input
+          type="text"
+          id="studentIDNumber"
+          value={studentIDNumber}
+          onChange={(e) => setStudentIDNumber(e.target.value)}
+        />
+
+        <Label htmlFor="table">Table:</Label>
+        <Input
+          type="text"
+          id="table"
+          value={table}
+          onChange={(e) => setTable(e.target.value)}
+        />
+
+        <Label htmlFor="dateAndTime">Date and Time:</Label>
+        <DateInput
+          type="datetime-local"
+          id="dateAndTime"
+          value={dateAndTime.toLocaleString("en-CA", {
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+          onChange={(e) => setDateAndTime(new Date(e.target.value))}
+        />
+
+        <SubmitButton type="submit">Submit</SubmitButton>
+      </form>
+    </FormContainer>
   );
 }
 

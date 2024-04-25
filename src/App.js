@@ -1,19 +1,13 @@
-import { useEffect, useState } from 'react'; 
-import './App.css'; 
+import { useEffect, useState } from "react";
+import "./App.css";
 import QRCode from "qrcode";
 import { addDoc, collection } from "firebase/firestore";
 import { firestore, storage } from "../src/database/firebase"; // Corrected import path
+import { ref, uploadString } from "firebase/storage";
+import { getDownloadURL } from "firebase/storage";
+import { uploadBytesResumable } from "firebase/storage";
 
-const CreateStudentForm = () => {
-
-  // For QRCode
-  const [temp, setTemp] = useState(""); 
-  const [word, setWord] = useState(""); 
-  const [size, setSize] = useState(400); 
-  const [bgColor, setBgColor] = useState("ffffff"); 
-  const [qrCode, setQrCode] = useState(""); 
-
-
+function App() {
   const [formData1, setFormData1] = useState([]);
   const [formData, setFormData] = useState({
     dateAndTime: "",
@@ -30,18 +24,70 @@ const CreateStudentForm = () => {
     studentIDNumber: "",
     table: "",
   });
+  const [size, setSize] = useState(400);
+  const [bgColor, setBgColor] = useState("ffffff");
+  const [qrCode, setQrCode] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  // Changing the URL only when the user
+  useEffect(() => {
+    generateQRCode(formData);
+  }, [formData, size, bgColor]);
+
+  // Function to generate QR Code
+  const generateQRCode = async (formData) => {
+    try {
+      const qrData = JSON.stringify(formData);
+      const generatedQRCode = await QRCode.toDataURL(qrData, {
+        errorCorrectionLevel: "H",
+      });
+      setQrCode(generatedQRCode);
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+    }
   };
 
-  const handleSubmit = async () => {
+  // Function to handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
     try {
       const fundsCollection = collection(firestore, "onetesting");
       await addDoc(fundsCollection, formData);
-      setFormData(...formData1, formData);
 
+      // Generate QR code image data URL
+      const qrData = JSON.stringify(formData);
+      const generatedQRCode = await QRCode.toDataURL(qrData, {
+        errorCorrectionLevel: "H",
+        width: size,
+        height: size,
+        color: {
+          dark: "#" + bgColor,
+          light: "#ffffff",
+        },
+      });
+
+      // Upload QR code image URL to Firebase Storage
+      const storageRef = ref(storage, `qrcodess/${formData.studentEmail}.png`);
+      await uploadString(storageRef, generatedQRCode, "data_url");
+
+      // Get download URL of the uploaded image
+      const downloadURL = await getDownloadURL(storageRef);
+
+      // Store download URL in Firestore
+      const docRef = await addDoc(collection(firestore, "downloadURLs"), {
+        downloadURL,
+        formData,
+      });
+
+      // Clear form data
       setFormData({
         dateAndTime: "",
         studentEmail: "",
@@ -57,272 +103,100 @@ const CreateStudentForm = () => {
         studentIDNumber: "",
         table: "",
       });
+
+      // Send email to the user with the download URL
+      const response = await fetch("/send-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.studentEmail,
+          downloadURL, // Include the download URL in the email payload
+        }),
+      });
+
+      if (response.ok) {
+        console.log("Email sent successfully");
+      } else {
+        console.error("Failed to send email");
+      }
+
+      // Clear form data and QR code
+      setFormData({
+        /* Reset form data */
+      });
+      setQrCode(""); // Clear QR code
     } catch (error) {
-      console.error("Error adding funding opportunity: ", error);
-      alert("Error adding funding opportunity. Please try again.");
+      console.error("Error generating and uploading QR code:", error);
+      alert("Error generating and uploading QR code. Please try again.");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8">
-      {/* dateAndTime */}
-      <div className="mb-4 col-2">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="dateAndTime"
-        >
-          Date and Time
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="dateAndTime"
-          name="dateAndTime"
-          type="text"
-          placeholder="Thu Apr 18 10:15:36 GMT+02:00 2024"
-          value={formData.dateAndTime}
-          onChange={handleChange}
-        />
-      </div>
+    <div className="App">
+      <div className="border border-red-500 p-10">
+        <div className="output-box mt-2">
+          <img src={qrCode} alt="" />
+          {/* <a href={qrCode} download="QRCode">
+        <button type="button">Download</button>
+      </a> */}
+        </div>
 
-      {/* email */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="email"
-        >
-          Email
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="email"
-          name="email"
-          type="email"
-          placeholder="Email"
-          value={formData.email}
-          onChange={handleChange}
-        />
-      </div>
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          {/* Render form inputs */}
+          {Object.keys(formData).map((key) => (
+            <div key={key}>
+              <label
+                htmlFor={key}
+                className="block text-gray-700 text-sm font-bold mb-2"
+              >
+                {key}
+              </label>
+              <input
+                type="text"
+                id={key}
+                name={key}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder={`Enter ${key}`}
+                value={formData[key]}
+                onChange={handleInputChange}
+              />
+            </div>
+          ))}
+        </div>
 
-      {/* examRoom */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="examRoom"
-        >
-          Exam Room
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="examRoom"
-          name="examRoom"
-          type="text"
-          placeholder="Exam Room"
-          value={formData.examRoom}
-          onChange={handleChange}
-        />
-      </div>
+        <div className="flex p-5">
+          <div className="flex flex-auto">
+            <h5>Background Color:</h5>
+            <input
+              type="color"
+              onChange={(e) => {
+                setBgColor(e.target.value.substring(1));
+              }}
+            />
+          </div>
 
-      {/* faculty */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="faculty"
-        >
-          Faculty
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="faculty"
-          name="faculty"
-          type="text"
-          placeholder="Faculty"
-          value={formData.faculty}
-          onChange={handleChange}
-        />
-      </div>
+          <div className="flex flex-auto">
+            <h5>Dimension:</h5>
+            <input
+              type="range"
+              min="200"
+              max="600"
+              value={size}
+              onChange={(e) => {
+                setSize(e.target.value);
+              }}
+            />
+          </div>
+        </div>
 
-      {/* firstName */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="firstName"
-        >
-          First Name
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="firstName"
-          name="firstName"
-          type="text"
-          placeholder="First Name"
-          value={formData.firstName}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* lastName */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="lastName"
-        >
-          Last Name
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="lastName"
-          name="lastName"
-          type="text"
-          placeholder="Last Name"
-          value={formData.lastName}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* moduleLeaderEmail */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="moduleLeaderEmail"
-        >
-          Module Leader Email
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="moduleLeaderEmail"
-          name="moduleLeaderEmail"
-          type="text"
-          placeholder="Module Leader Email"
-          value={formData.moduleLeaderEmail}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* moduleLeaderName */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="moduleLeaderName"
-        >
-          Module Leader Name
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="moduleLeaderName"
-          name="moduleLeaderName"
-          type="text"
-          placeholder="Module Leader Name"
-          value={formData.moduleLeaderName}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* moduleName */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="moduleName"
-        >
-          Module Name
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="moduleName"
-          name="moduleName"
-          type="text"
-          placeholder="Module Name"
-          value={formData.moduleName}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* phoneNumber */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="phoneNumber"
-        >
-          Phone Number
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="phoneNumber"
-          name="phoneNumber"
-          type="text"
-          placeholder="Phone Number"
-          value={formData.phoneNumber}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* room */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="room"
-        >
-          Room
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="room"
-          name="room"
-          type="text"
-          placeholder="Room"
-          value={formData.room}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* studentIDNumber */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="studentIDNumber"
-        >
-          Student ID Number
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="studentIDNumber"
-          name="studentIDNumber"
-          type="text"
-          placeholder="Student ID Number"
-          value={formData.studentIDNumber}
-          onChange={handleChange}
-        />
-      </div>
-
-      {/* table */}
-      <div className="mb-4">
-        <label
-          className="block text-gray-700 text-sm font-bold mb-2"
-          htmlFor="table"
-        >
-          Table
-        </label>
-        <input
-          className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          id="table"
-          name="table"
-          type="text"
-          placeholder="Table"
-          value={formData.table}
-          onChange={handleChange}
-        />
-      </div>
-
-      <div className="flex items-center justify-between">
-        <button
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type="submit"
-          onClick={handleSubmit}
-        >
-          Submit
+        <button type="submit" className="bg-red-500 border border-black text-white" onClick={handleSubmit}>
+          Send Email
         </button>
       </div>
     </div>
   );
-};
+}
 
-export default CreateStudentForm;
+export default App;

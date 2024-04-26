@@ -5,6 +5,8 @@ import { getFirestore, collection, addDoc } from "firebase/firestore";
 import { getStorage, ref, uploadString } from "firebase/storage";
 import { firebaseApp } from "./database/firebase";
 import tw from "tailwind-styled-components";
+import DownloadButton from "./components/DownloadButton";
+import DeclinedStudents from "./components/DeclinedStudents";
 
 const FormContainer = tw.div`
   w-full
@@ -66,7 +68,7 @@ function App() {
   const [moduleName, setModuleName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [room, setRoom] = useState("");
-  const [studentEmail, setStudentEmail] = useState("uhbbb@b.com");
+  const [studentEmail, setStudentEmail] = useState("");
   const [studentIDNumber, setStudentIDNumber] = useState("");
   const [table, setTable] = useState("");
 
@@ -103,7 +105,7 @@ function App() {
   };
 
   return (
-    <FormContainer>
+    <FormContainer >
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -222,6 +224,10 @@ function App() {
 
         <SubmitButton type="submit">Submit</SubmitButton>
       </form>
+
+      <DownloadButton />
+
+      <DeclinedStudents/>
     </FormContainer>
   );
 }

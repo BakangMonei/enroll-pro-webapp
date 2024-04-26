@@ -6,6 +6,7 @@ import { getStorage, ref, uploadString } from "firebase/storage";
 import { firebaseApp } from "./database/firebase";
 import tw from "tailwind-styled-components";
 import DownloadButton from "./components/DownloadButton";
+import { getFunctions, httpsCallable } from "firebase/functions";
 import DeclinedStudents from "./components/DeclinedStudents";
 
 const FormContainer = tw.div`
@@ -78,11 +79,45 @@ function App() {
     return qrCodeImage;
   };
 
-  const handleSubmit = async (firebaseApp) => {
-    const qrCodeImage = await generateQRCode();
-    const firestore = getFirestore(firebaseApp);
-    const storage = getStorage(firebaseApp);
+  // const handleSubmit = async (firebaseApp) => {
+  //   const qrCodeImage = await generateQRCode();
+  //   const firestore = getFirestore(firebaseApp);
+  //   const storage = getStorage(firebaseApp);
 
+  //   const userDocRef = await addDoc(collection(firestore, "users"), {
+  //     dateAndTime: dateAndTime.toISOString(),
+  //     examRoom,
+  //     faculty,
+  //     firstName,
+  //     lastName,
+  //     moduleLeaderEmail,
+  //     moduleLeaderName,
+  //     moduleName,
+  //     phoneNumber,
+  //     room,
+  //     studentEmail,
+  //     studentIDNumber,
+  //     table,
+  //     qrCodeImage,
+  //   });
+
+  //   const storageRef = ref(storage, userDocRef.id);
+  //   await uploadString(storageRef, qrCodeImage, "data_url");
+  // };
+
+  // const functions = getFunctions();
+
+  // const sendEmail = httpsCallable(functions, 'sendEmail');
+
+  const functions = getFunctions();
+
+  const sendEmail = httpsCallable(functions, "sendEmail");
+
+  const handleSubmit = async () => {
+    const qrCodeImage = await generateQRCode();
+    const firestore = getFirestore();
+    const storage = getStorage();
+  
     const userDocRef = await addDoc(collection(firestore, "users"), {
       dateAndTime: dateAndTime.toISOString(),
       examRoom,
@@ -99,19 +134,59 @@ function App() {
       table,
       qrCodeImage,
     });
-
+  
     const storageRef = ref(storage, userDocRef.id);
     await uploadString(storageRef, qrCodeImage, "data_url");
+  
+    try {
+      const result = await sendEmail({
+        to: studentEmail,
+        subject: "Your Exam Details",
+        body: `Dear ${firstName} ${lastName},\n\nYour exam details are as follows:\n\nDate and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nModule Name: ${moduleName}\n\nPlease find attached your QR code.\n\nBest regards,\n[Your Name]`,
+        attachments: [
+          {
+            filename: "qrCode.png",
+            type: "image/png",
+            content: qrCodeImage,
+          },
+        ],
+      });
+  
+      console.log(result);
+      alert("Form submitted successfully!");
+      clearForm();
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  const clearForm = () => {
+    setDateAndTime(new Date());
+    setExamRoom("");
+    setFaculty("");
+    setFirstName("");
+    setLastName("");
+    setModuleLeaderEmail("");
+    setModuleLeaderName("");
+    setModuleName("");
+    setPhoneNumber("");
+    setRoom("");
+    setStudentEmail("");
+    setStudentIDNumber("");
+    setTable("");
   };
 
   return (
-    <FormContainer >
+    <FormContainer>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           handleSubmit(firebaseApp);
         }}
       >
+        <h1 className="text-center font-sans text text-2xl">
+          Schedule An Exam
+        </h1>
         <Label htmlFor="examRoom">Exam Room:</Label>
         <Input
           type="text"
@@ -227,7 +302,7 @@ function App() {
 
       <DownloadButton />
 
-      <DeclinedStudents/>
+      <DeclinedStudents />
     </FormContainer>
   );
 }

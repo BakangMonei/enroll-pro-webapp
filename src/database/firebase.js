@@ -6,6 +6,8 @@ import { getDatabase } from "firebase/database"; // Add Realtime Database
 import { getStorage } from "firebase/storage"; // Add Storage
 import { collection } from "firebase/firestore"; // Add Firestore
 import { query, where, getDocs } from "firebase/firestore";
+import { getFunctions, httpsCallable } from 'firebase/functions';
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyBd-1L_b5TEE_PSuO4unXb3sLUNLybFeZ4",
@@ -24,8 +26,9 @@ const firebaseApp = initializeApp(firebaseConfig);
 // Initialize Firebase services
 const auth = getAuth(firebaseApp); // Initialize Auth
 const firestore = getFirestore(firebaseApp); // Initialize Firestore
+const functions = getFunctions(firebaseApp); // Initialize Functions
 const database = getDatabase(firebaseApp); // Initialize Realtime Database
 const storage = getStorage(); // Initialize Storage without passing firebaseApp
 const analytics = getAnalytics(firebaseApp);
 
-export { auth, firestore, database, storage, firebaseApp };
+export { auth, firestore, database, storage, functions, analytics, firebaseApp };

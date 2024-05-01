@@ -1,36 +1,30 @@
-const functions = require('firebase-functions');
-const nodemailer = require('nodemailer');
-
-const gmailEmail = '';
-const gmailPassword = '';
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: "smtps://bakangmonei2:btikrsvqtvzpayub@smtp.gmail.com:465",
+  port: 587,
+  secure: false, // or 'STARTTLS'
   auth: {
-    user: gmailEmail,
-    pass: gmailPassword,
+    user: "bakangmonei2@gmail.com",
+    pass: "btikrsvqtvzpayub",
   },
 });
 
-exports.sendFormDetailsToEmail = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('failed-precondition', 'The function must be called while authenticated.');
-  }
-
-  const { name, email, message } = data;
-
+exports.sendEmail = functions.https.onCall(async (data) => {
+  const { to, subject, body, attachments } = data;
   const mailOptions = {
-    from: gmailEmail,
-    to: gmailEmail,
-    subject: 'New Form Submission',
-    text: `Name: ${name}\nEmail: ${email}\nMessage: ${message}`,
+    from: "bigDaddy",
+    to,
+    subject,
+    text: body,
+    attachments,
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    return { status: 'success' };
+    return { success: true };
   } catch (error) {
     console.error(error);
-    throw new functions.https.HttpsError('internal', 'Failed to send email.');
+    return { success: false, error: error.message };
   }
 });

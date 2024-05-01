@@ -1,46 +1,30 @@
-const functions = require('firebase-functions');
 const nodemailer = require('nodemailer');
 
-const gmailEmail = 'bakangmonei2@gmail.com';
-const gmailPassword = '';
-
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtps://bakangmonei2:btikrsvqtvzpayub@smtp.gmail.com:465',
+  port: 587,
+  secure: false, // or 'STARTTLS'
   auth: {
-    user: gmailEmail,
-    pass: gmailPassword,
-  },
+    user: 'bakangmonei2@gmail.com',
+    pass: 'btikrsvqtvzpayub'
+  }
 });
 
-exports.sendFormDetailsToEmail = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('failed-precondition', 'The function must be called while authenticated.');
-  }
-
-  const {
-    dateAndTime, examRoom, faculty, firstName, lastName, moduleLeaderEmail, moduleLeaderName,
-    moduleName, phoneNumber, room, studentEmail, studentIDNumber, table, qrCodeImage,
-  } = data;
-
+exports.sendEmail = functions.https.onCall(async (data) => {
+  const { to, subject, body, attachments } = data;
   const mailOptions = {
-    from: gmailEmail,
-    to: studentEmail,
-    subject: 'Your Exam Details',
-    text: `Dear ${firstName} ${lastName},\n\nYour exam details are as follows:\n\nDate and Time: ${dateAndTime}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nModule Name: ${moduleName}\n\nPlease find attached your QR code.\n\nBest regards,\n[Your Name]`,
-    attachments: [
-      {
-        filename: 'qrCode.png',
-        type: 'image/png',
-        content: qrCodeImage,
-      },
-    ],
+    from: 'bigDaddy',
+    to,
+    subject,
+    text: body,
+    attachments
   };
 
   try {
     await transporter.sendMail(mailOptions);
-    return { status: 'success' };
+    return { success: true };
   } catch (error) {
     console.error(error);
-    throw new functions.https.HttpsError('internal', 'Failed to send email.');
+    return { success: false, error: error.message };
   }
 });

@@ -8,6 +8,8 @@ import tw from "tailwind-styled-components";
 import DownloadButton from "./components/DownloadButton";
 import { getFunctions, httpsCallable } from "firebase/functions";
 import DeclinedStudents from "./components/DeclinedStudents";
+import axios from "axios";
+import { Buffer } from "buffer";
 
 const FormContainer = tw.div`
   w-full
@@ -79,40 +81,6 @@ function App() {
     return qrCodeImage;
   };
 
-  // const handleSubmit = async (firebaseApp) => {
-  //   const qrCodeImage = await generateQRCode();
-  //   const firestore = getFirestore(firebaseApp);
-  //   const storage = getStorage(firebaseApp);
-
-  //   const userDocRef = await addDoc(collection(firestore, "users"), {
-  //     dateAndTime: dateAndTime.toISOString(),
-  //     examRoom,
-  //     faculty,
-  //     firstName,
-  //     lastName,
-  //     moduleLeaderEmail,
-  //     moduleLeaderName,
-  //     moduleName,
-  //     phoneNumber,
-  //     room,
-  //     studentEmail,
-  //     studentIDNumber,
-  //     table,
-  //     qrCodeImage,
-  //   });
-
-  //   const storageRef = ref(storage, userDocRef.id);
-  //   await uploadString(storageRef, qrCodeImage, "data_url");
-  // };
-
-  // const functions = getFunctions();
-
-  // const sendEmail = httpsCallable(functions, 'sendEmail');
-
-  const functions = getFunctions();
-
-  const sendEmail = httpsCallable(functions, "sendEmail");
-
   const handleSubmit = async () => {
     const qrCodeImage = await generateQRCode();
     const firestore = getFirestore();
@@ -138,28 +106,46 @@ function App() {
     const storageRef = ref(storage, userDocRef.id);
     await uploadString(storageRef, qrCodeImage, "data_url");
   
-    try {
-      const result = await sendEmail({
-        to: studentEmail,
-        subject: "Your Exam Details",
-        body: `Dear ${firstName} ${lastName},\n\nYour exam details are as follows:\n\nDate and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nModule Name: ${moduleName}\n\nPlease find attached your QR code.\n\nBest regards,\n[Your Name]`,
-        attachments: [
-          {
-            filename: "qrCode.png",
-            type: "image/png",
-            content: qrCodeImage,
-          },
-        ],
-      });
+    // Convert QR code data URL to Buffer
+    // const qrCodeBuffer = Buffer.from(qrCodeImage.split(",")[1], "base64");
+    const qrCodeBuffer = new Buffer.from(qrCodeImage.split(",")[1], "base64");
   
-      console.log(result);
-      alert("Form submitted successfully!");
-      clearForm();
+    // Sending email with input data and image
+    const emailData = {
+      to: studentEmail,
+      subject: "Exam Schedule",
+      text: `Your exam schedule details:\n
+        \nDate and Time: ${dateAndTime.toISOString()}
+        \nExam Room: ${examRoom}
+        \nFaculty: ${faculty}
+        \nFirst Name: ${firstName}
+        \nLast Name: ${lastName}
+        \nModule Leader Email: ${moduleLeaderEmail}
+        \nModule Leader Name: ${moduleLeaderName}
+        \nModule Name: ${moduleName}
+        \nPhone Number: ${phoneNumber}
+        \nRoom: ${room}
+        \nStudent ID Number: ${studentIDNumber}
+        \nTable: ${table}
+        \nThe QRCode: `,
+      attachments: [
+        {
+          filename: "qrcode.png",
+          content: qrCodeBuffer,
+          contentType: "image/png",
+        },
+      ],
+    };
+  
+    try {
+      // Send email
+      await axios.post("http://localhost:3001/send-email", emailData);
+      alert("Email sent successfully");
     } catch (error) {
       console.error(error);
     }
   };
-  
+
   const clearForm = () => {
     setDateAndTime(new Date());
     setExamRoom("");

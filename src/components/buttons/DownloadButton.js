@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
 import { firestore } from "../../database/firebase";
 import Papa from "papaparse";
+import "../../App.css";
 
 const DownloadButton = () => {
   const [data, setData] = useState([]);
@@ -51,9 +52,10 @@ const DownloadButton = () => {
       </select>
       <button
         onClick={downloadData}
-        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        className="w-auto bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow-md hover:shadow-lg transition duration-300 ease-in-out"
       >
         Verified Students
+        
       </button>
     </div>
   );

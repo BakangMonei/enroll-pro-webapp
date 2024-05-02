@@ -43,19 +43,7 @@ const DateInput = tw(Input)`
   text-gray-500
 `;
 
-const SubmitButton = tw.button`
-  w-full
-  p-2
-  bg-blue-500
-  text-white
-  font-bold
-  rounded-md
-  hover:bg-blue-600
-  focus:outline-none
-  focus:ring-2
-  focus:ring-blue-500
-  focus:ring-offset-2
-`;
+
 
 const ScheduleForm = () => {
   const [dateAndTime, setDateAndTime] = useState(new Date());
@@ -294,11 +282,14 @@ const ScheduleForm = () => {
           </div>
         </div>
         <div className="flex justify-center">
-          <SubmitButton type="submit">Submit</SubmitButton>
+          <button type="submit" 
+          className="w-full bg-blue-500 text-white rounded-md">
+            Schedule Exam
+          </button>
         </div>
       </form>
 
-      <div className="flex items-center ">
+      <div className="w-auto flex  mt-3">
         <DownloadButton />
         <DeclinedStudents />
       </div>

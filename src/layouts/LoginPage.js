@@ -9,6 +9,8 @@ import {
 } from "firebase/firestore";
 import { auth } from "../database/firebase";
 import { useNavigate } from "react-router-dom";
+import "../App.css"
+import logoo from "../assets/images/colllege.png"
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -58,12 +60,14 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-300 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8 border p-5 bg-gray-200 ">
         <div>
+            <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900 mb-3" >AcademiScan</h1>
           <img
             className="mx-auto h-12 w-auto"
-            src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
+            // src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
+            src={logoo}
             alt="Workflow"
           />
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">

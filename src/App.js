@@ -18,7 +18,7 @@ const isAuthenticated = () => {
 
 // Private Route component to handle authentication
 const PrivateRoute = ({ element, path }) => {
-  return isAuthenticated() ? element : <Navigate to="/LoginPage" />;
+  return isAuthenticated() ? element : <Navigate to="/" />;
 };
 
 function App() {

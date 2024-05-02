@@ -1,0 +1,43 @@
+const handleSubmit = async () => {
+    const qrCodeImage = await generateQRCode();
+    const firestore = getFirestore();
+    const storage = getStorage();
+
+    const userDocRef = await addDoc(collection(firestore, "users"), {
+      dateAndTime: dateAndTime.toISOString(),examRoom, faculty,firstName,lastName, moduleLeaderEmail, moduleLeaderName,moduleName,phoneNumber, room,studentEmail,studentIDNumber, table,qrCodeImage,
+    });
+
+    const storageRef = ref(storage, userDocRef.id);
+    await uploadString(storageRef, qrCodeImage, "data_url");
+
+    // Sending email with input data and image
+    const emailData = {
+      to: studentEmail,
+      subject: "Exam Schedule",
+      text: `Your exam schedule details:\n
+        \nDate and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}
+        \nFaculty: ${faculty} \nFirst Name: ${firstName} \nLast Name: ${lastName}
+        \nModule Leader Email: ${moduleLeaderEmail} \nModule Leader Name: ${moduleLeaderName}
+        \nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}
+        \nRoom: ${room}\nStudent ID Number: ${studentIDNumber}
+        \nTable: ${table}
+        \nThe QRCode: `,
+      attachments: [
+        {
+          filename: "qrcode.png",
+          content: qrCodeImage.split(",")[1], // Base64 encoded string
+          encoding: "base64", // Specify encoding
+          contentType: "image/png",
+        },
+      ],
+    };
+
+    try {
+      // Send email
+      await axios.post("http://localhost:3001/send-email", emailData);
+      alert("Email sent successfully");
+      clearForm();
+    } catch (error) {
+      console.error(error);
+    }
+  };

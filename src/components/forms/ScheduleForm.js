@@ -61,7 +61,7 @@ const ScheduleForm = () => {
   const [table, setTable] = useState("");
 
   const generateQRCode = async () => {
-    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nModule Leader Email: ${moduleLeaderEmail}\nModule Leader Name: ${moduleLeaderName}\nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}`;
+    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nLecture Email: ${moduleLeaderEmail}\nLecture Name: ${moduleLeaderName}\nCourse Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}`;
     const qrCodeImage = await QRCode.toDataURL(qrCodeData);
     return qrCodeImage;
   };
@@ -72,20 +72,7 @@ const ScheduleForm = () => {
     const storage = getStorage();
 
     const userDocRef = await addDoc(collection(firestore, "users"), {
-      dateAndTime: dateAndTime.toISOString(),
-      examRoom,
-      faculty,
-      firstName,
-      lastName,
-      moduleLeaderEmail,
-      moduleLeaderName,
-      moduleName,
-      phoneNumber,
-      room,
-      studentEmail,
-      studentIDNumber,
-      table,
-      qrCodeImage,
+      dateAndTime: dateAndTime.toISOString(),examRoom, faculty,firstName,lastName, moduleLeaderEmail, moduleLeaderName,moduleName,phoneNumber, room,studentEmail,studentIDNumber, table,qrCodeImage,
     });
 
     const storageRef = ref(storage, userDocRef.id);
@@ -96,17 +83,11 @@ const ScheduleForm = () => {
       to: studentEmail,
       subject: "Exam Schedule",
       text: `Your exam schedule details:\n
-        \nDate and Time: ${dateAndTime.toISOString()}
-        \nExam Room: ${examRoom}
-        \nFaculty: ${faculty}
-        \nFirst Name: ${firstName}
-        \nLast Name: ${lastName}
-        \nModule Leader Email: ${moduleLeaderEmail}
-        \nModule Leader Name: ${moduleLeaderName}
-        \nModule Name: ${moduleName}
-        \nPhone Number: ${phoneNumber}
-        \nRoom: ${room}
-        \nStudent ID Number: ${studentIDNumber}
+        \nDate and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}
+        \nFaculty: ${faculty} \nFirst Name: ${firstName} \nLast Name: ${lastName}
+        \nLecture Email: ${moduleLeaderEmail} \nLecture Name: ${moduleLeaderName}
+        \nCourse Name: ${moduleName}\nPhone Number: ${phoneNumber}
+        \nRoom: ${room}\nStudent ID Number: ${studentIDNumber}
         \nTable: ${table}
         \nThe QRCode: `,
       attachments: [

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { getFirestore, collection, getDocs } from "firebase/firestore";
-import { firestore } from "../database/firebase";
+import { firestore } from "../../database/firebase";
 import Papa from "papaparse";
 
 const DownloadButton = () => {

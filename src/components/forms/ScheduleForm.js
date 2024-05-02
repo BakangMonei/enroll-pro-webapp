@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import QRCode from "qrcode";
 import { getFirestore, collection, addDoc } from "firebase/firestore";
-import { getStorage, ref, uploadString } from "firebase/storage";
+import { getStorage, ref, uploadString, uploadBytes } from "firebase/storage";
 import { firebaseApp } from "../../database/firebase";
 import tw from "tailwind-styled-components";
 import DownloadButton from "../buttons/DownloadButton";
@@ -43,7 +43,17 @@ const DateInput = tw(Input)`
   text-gray-500
 `;
 
-
+const ImageInput = tw.input`
+  w-full
+  p-2
+  border
+  border-gray-300
+  rounded-md
+  focus:outline-none
+  focus:ring-2
+  focus:ring-blue-500
+  focus:border-blue-500
+`;
 
 const ScheduleForm = () => {
   const [dateAndTime, setDateAndTime] = useState(new Date());
@@ -59,9 +69,10 @@ const ScheduleForm = () => {
   const [studentEmail, setStudentEmail] = useState("");
   const [studentIDNumber, setStudentIDNumber] = useState("");
   const [table, setTable] = useState("");
+  const [image, setImage] = useState(null); // Add image state
 
   const generateQRCode = async () => {
-    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nLecture Email: ${moduleLeaderEmail}\nLecture Name: ${moduleLeaderName}\nCourse Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}`;
+    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nModule Leader Email: ${moduleLeaderEmail}\nModule Leader Name: ${moduleLeaderName}\nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}`;
     const qrCodeImage = await QRCode.toDataURL(qrCodeData);
     return qrCodeImage;
   };
@@ -71,8 +82,26 @@ const ScheduleForm = () => {
     const firestore = getFirestore();
     const storage = getStorage();
 
+    // Upload image to Firebase Storage
+    const imageRef = ref(storage, `profile_picturesssss/${studentIDNumber}.jpg`);
+    await uploadBytes(imageRef, image);
+
     const userDocRef = await addDoc(collection(firestore, "users"), {
-      dateAndTime: dateAndTime.toISOString(),examRoom, faculty,firstName,lastName, moduleLeaderEmail, moduleLeaderName,moduleName,phoneNumber, room,studentEmail,studentIDNumber, table,qrCodeImage,
+      dateAndTime: dateAndTime.toISOString(),
+      examRoom,
+      faculty,
+      firstName,
+      lastName,
+      moduleLeaderEmail,
+      moduleLeaderName,
+      moduleName,
+      phoneNumber,
+      room,
+      studentEmail,
+      studentIDNumber,
+      table,
+      qrCodeImage,
+      profilePicture: `profile_picturesssss/${studentIDNumber}.jpg`, // Store image path in Firestore
     });
 
     const storageRef = ref(storage, userDocRef.id);
@@ -85,8 +114,8 @@ const ScheduleForm = () => {
       text: `Your exam schedule details:\n
         \nDate and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}
         \nFaculty: ${faculty} \nFirst Name: ${firstName} \nLast Name: ${lastName}
-        \nLecture Email: ${moduleLeaderEmail} \nLecture Name: ${moduleLeaderName}
-        \nCourse Name: ${moduleName}\nPhone Number: ${phoneNumber}
+        \nModule Leader Email: ${moduleLeaderEmail} \nModule Leader Name: ${moduleLeaderName}
+        \nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}
         \nRoom: ${room}\nStudent ID Number: ${studentIDNumber}
         \nTable: ${table}
         \nThe QRCode: `,
@@ -124,6 +153,7 @@ const ScheduleForm = () => {
     setStudentEmail("");
     setStudentIDNumber("");
     setTable("");
+    setImage(null); // Reset image state
   };
 
   return (
@@ -259,6 +289,15 @@ const ScheduleForm = () => {
                 minute: "2-digit",
               })}
               onChange={(e) => setDateAndTime(new Date(e.target.value))}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="image">Profile Picture:</Label>
+            <ImageInput
+              type="file"
+              id="image"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
             />
           </div>
         </div>

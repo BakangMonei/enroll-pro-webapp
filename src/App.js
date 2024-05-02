@@ -85,7 +85,7 @@ function App() {
     const qrCodeImage = await generateQRCode();
     const firestore = getFirestore();
     const storage = getStorage();
-  
+
     const userDocRef = await addDoc(collection(firestore, "users"), {
       dateAndTime: dateAndTime.toISOString(),
       examRoom,
@@ -102,14 +102,10 @@ function App() {
       table,
       qrCodeImage,
     });
-  
+
     const storageRef = ref(storage, userDocRef.id);
     await uploadString(storageRef, qrCodeImage, "data_url");
-  
-    // Convert QR code data URL to Buffer
-    // const qrCodeBuffer = Buffer.from(qrCodeImage.split(",")[1], "base64");
-    const qrCodeBuffer = new Buffer.from(qrCodeImage.split(",")[1], "base64");
-  
+
     // Sending email with input data and image
     const emailData = {
       to: studentEmail,
@@ -131,16 +127,18 @@ function App() {
       attachments: [
         {
           filename: "qrcode.png",
-          content: qrCodeBuffer,
+          content: qrCodeImage.split(",")[1], // Base64 encoded string
+          encoding: "base64", // Specify encoding
           contentType: "image/png",
         },
       ],
     };
-  
+
     try {
       // Send email
       await axios.post("http://localhost:3001/send-email", emailData);
       alert("Email sent successfully");
+      clearForm();
     } catch (error) {
       console.error(error);
     }
@@ -173,122 +171,140 @@ function App() {
         <h1 className="text-center font-sans text text-2xl">
           Schedule An Exam
         </h1>
-        <Label htmlFor="examRoom">Exam Room:</Label>
-        <Input
-          type="text"
-          id="examRoom"
-          value={examRoom}
-          onChange={(e) => setExamRoom(e.target.value)}
-        />
-
-        <Label htmlFor="faculty">Faculty:</Label>
-        <Input
-          type="text"
-          id="faculty"
-          value={faculty}
-          onChange={(e) => setFaculty(e.target.value)}
-        />
-
-        <Label htmlFor="firstName">First Name:</Label>
-        <Input
-          type="text"
-          id="firstName"
-          value={firstName}
-          onChange={(e) => setFirstName(e.target.value)}
-        />
-
-        <Label htmlFor="lastName">Last Name:</Label>
-        <Input
-          type="text"
-          id="lastName"
-          value={lastName}
-          onChange={(e) => setLastName(e.target.value)}
-        />
-
-        <Label htmlFor="moduleLeaderEmail">Module Leader Email:</Label>
-        <Input
-          type="email"
-          id="moduleLeaderEmail"
-          value={moduleLeaderEmail}
-          onChange={(e) => setModuleLeaderEmail(e.target.value)}
-        />
-
-        <Label htmlFor="moduleLeaderName">Module Leader Name:</Label>
-        <Input
-          type="text"
-          id="moduleLeaderName"
-          value={moduleLeaderName}
-          onChange={(e) => setModuleLeaderName(e.target.value)}
-        />
-
-        <Label htmlFor="moduleName">Module Name:</Label>
-        <Input
-          type="text"
-          id="moduleName"
-          value={moduleName}
-          onChange={(e) => setModuleName(e.target.value)}
-        />
-
-        <Label htmlFor="phoneNumber">Phone Number:</Label>
-        <Input
-          type="tel"
-          id="phoneNumber"
-          value={phoneNumber}
-          onChange={(e) => setPhoneNumber(e.target.value)}
-        />
-
-        <Label htmlFor="room">Room:</Label>
-        <Input
-          type="text"
-          id="room"
-          value={room}
-          onChange={(e) => setRoom(e.target.value)}
-        />
-
-        <Label htmlFor="studentEmail">Student Email:</Label>
-        <Input
-          type="email"
-          id="studentEmail"
-          value={studentEmail}
-          onChange={(e) => setStudentEmail(e.target.value)}
-        />
-
-        <Label htmlFor="studentIDNumber">Student ID Number:</Label>
-        <Input
-          type="text"
-          id="studentIDNumber"
-          value={studentIDNumber}
-          onChange={(e) => setStudentIDNumber(e.target.value)}
-        />
-
-        <Label htmlFor="table">Table:</Label>
-        <Input
-          type="text"
-          id="table"
-          value={table}
-          onChange={(e) => setTable(e.target.value)}
-        />
-
-        <Label htmlFor="dateAndTime">Date and Time:</Label>
-        <DateInput
-          type="datetime-local"
-          id="dateAndTime"
-          value={dateAndTime.toLocaleString("en-CA", {
-            year: "numeric",
-            month: "2-digit",
-            day: "2-digit",
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-          onChange={(e) => setDateAndTime(new Date(e.target.value))}
-        />
-
-        <SubmitButton type="submit">Submit</SubmitButton>
+        <div className="flex flex-wrap -mx-4">
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="examRoom">Exam Block:</Label>
+            <Input
+              type="text"
+              id="examRoom"
+              value={examRoom}
+              onChange={(e) => setExamRoom(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="faculty">Faculty:</Label>
+            <Input
+              type="text"
+              id="faculty"
+              value={faculty}
+              onChange={(e) => setFaculty(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="firstName">First Name:</Label>
+            <Input
+              type="text"
+              id="firstName"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="lastName">Last Name:</Label>
+            <Input
+              type="text"
+              id="lastName"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="moduleLeaderEmail">Lecture Email:</Label>
+            <Input
+              type="email"
+              id="moduleLeaderEmail"
+              value={moduleLeaderEmail}
+              onChange={(e) => setModuleLeaderEmail(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="moduleLeaderName">Lecture Names:</Label>
+            <Input
+              type="text"
+              id="moduleLeaderName"
+              value={moduleLeaderName}
+              onChange={(e) => setModuleLeaderName(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="moduleName">Module Name:</Label>
+            <Input
+              type="text"
+              id="moduleName"
+              value={moduleName}
+              onChange={(e) => setModuleName(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="phoneNumber">Phone Number:</Label>
+            <Input
+              type="tel"
+              id="phoneNumber"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="room">Room:</Label>
+            <Input
+              type="text"
+              id="room"
+              value={room}
+              onChange={(e) => setRoom(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="studentEmail">Student Email:</Label>
+            <Input
+              type="email"
+              id="studentEmail"
+              value={studentEmail}
+              onChange={(e) => setStudentEmail(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="studentIDNumber">Student ID Number:</Label>
+            <Input
+              type="text"
+              id="studentIDNumber"
+              value={studentIDNumber}
+              onChange={(e) => setStudentIDNumber(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="table">Table:</Label>
+            <Input
+              type="text"
+              id="table"
+              value={table}
+              onChange={(e) => setTable(e.target.value)}
+            />
+          </div>
+          <div className="w-full md:w-1/2 px-4 mb-4">
+            <Label htmlFor="dateAndTime">Date and Time:</Label>
+            <DateInput
+              type="datetime-local"
+              id="dateAndTime"
+              value={dateAndTime.toLocaleString("en-CA", {
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+              onChange={(e) => setDateAndTime(new Date(e.target.value))}
+            />
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <SubmitButton type="submit">Submit</SubmitButton>
+        </div>
       </form>
 
-      <DownloadButton />
-
-      <DeclinedStudents />
+      <div className="flex items-center ">
+        <DownloadButton />
+        <DeclinedStudents />
+      </div>
     </FormContainer>
   );
 }

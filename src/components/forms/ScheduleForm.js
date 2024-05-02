@@ -183,7 +183,7 @@ const ScheduleForm = () => {
           Schedule An Exam
         </h1>
 
-        <div className="w-full md:w-1/2 px-4 mb-4 item-center">
+        <div className="w-full md:w-1/2 px-4 mb-4 item-center justify-center">
           <Label htmlFor="image">Profile Picture:</Label>
           <ImageInput
             type="file"

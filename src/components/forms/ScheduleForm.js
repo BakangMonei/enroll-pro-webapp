@@ -91,11 +91,14 @@ const ScheduleForm = () => {
     const qrCodeImage = await generateQRCode();
     const firestore = getFirestore();
     const storage = getStorage();
-  
+
     // Upload image to Firebase Storage
-    const imageRef = ref(storage, `profile_picturesssss/${studentIDNumber}.jpg`);
+    const imageRef = ref(
+      storage,
+      `profile_picturesssss/${studentIDNumber}.jpg`
+    );
     await uploadBytes(imageRef, image);
-  
+
     const userDocRef = await addDoc(collection(firestore, "users"), {
       dateAndTime: dateAndTime.toISOString(),
       examRoom,
@@ -114,10 +117,10 @@ const ScheduleForm = () => {
       profilePicture: `profile_picturesssss/${studentIDNumber}.jpg`, // Store image path in Firestore
       profilePictureUrl: profilePictureUrl, // Store profile picture URL in Firestore
     });
-  
+
     const storageRef = ref(storage, userDocRef.id);
     await uploadString(storageRef, qrCodeImage, "data_url");
-  
+
     // Sending email with input data and image
     const emailData = {
       to: studentEmail,
@@ -139,7 +142,7 @@ const ScheduleForm = () => {
         },
       ],
     };
-  
+
     try {
       // Send email
       await axios.post("http://localhost:3001/send-email", emailData);
@@ -164,6 +167,7 @@ const ScheduleForm = () => {
     setStudentEmail("");
     setStudentIDNumber("");
     setTable("");
+    setProfilePictureUrl("");
     setImage(null); // Reset image state
   };
 
@@ -178,6 +182,23 @@ const ScheduleForm = () => {
         <h1 className="text-center font-sans text text-2xl">
           Schedule An Exam
         </h1>
+
+        <div className="w-full md:w-1/2 px-4 mb-4 item-center">
+          <Label htmlFor="image">Profile Picture:</Label>
+          <ImageInput
+            type="file"
+            id="image"
+            accept="image/*"
+            onChange={handleImageChange}
+          />
+          {profilePictureUrl && (
+            <img
+              src={profilePictureUrl}
+              alt="Profile Picture"
+              className="w-24 h-24 object-cover rounded-full mt-2"
+            />
+          )}
+        </div>
         <div className="flex flex-wrap -mx-4">
           <div className="w-full md:w-1/2 px-4 mb-4">
             <Label htmlFor="examRoom">Exam Block:</Label>
@@ -301,22 +322,6 @@ const ScheduleForm = () => {
               })}
               onChange={(e) => setDateAndTime(new Date(e.target.value))}
             />
-          </div>
-          <div className="w-full md:w-1/2 px-4 mb-4">
-            <Label htmlFor="image">Profile Picture:</Label>
-            <ImageInput
-              type="file"
-              id="image"
-              accept="image/*"
-              onChange={handleImageChange}
-            />
-            {profilePictureUrl && (
-              <img
-                src={profilePictureUrl}
-                alt="Profile Picture"
-                className="w-24 h-24 object-cover rounded-full mt-2"
-              />
-            )}
           </div>
         </div>
         <div className="flex justify-center">

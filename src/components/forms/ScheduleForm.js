@@ -128,8 +128,8 @@ const ScheduleForm = () => {
       text: `Your exam schedule details:\n
         \nDate and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}
         \nFaculty: ${faculty} \nFirst Name: ${firstName} \nLast Name: ${lastName}
-        \nModule Leader Email: ${moduleLeaderEmail} \nModule Leader Name: ${moduleLeaderName}
-        \nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}
+        \nLecture Email: ${moduleLeaderEmail} \nLecture Name: ${moduleLeaderName}
+        \nCourse ${moduleName}\nPhone Number: ${phoneNumber}
         \nRoom: ${room}\nStudent ID Number: ${studentIDNumber}
         \nTable: ${table}
         \nThe QRCode: `,

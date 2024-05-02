@@ -70,9 +70,19 @@ const ScheduleForm = () => {
   const [studentIDNumber, setStudentIDNumber] = useState("");
   const [table, setTable] = useState("");
   const [image, setImage] = useState(null); // Add image state
+  const [profilePictureUrl, setProfilePictureUrl] = useState("");
+
+  const handleImageChange = (e) => {
+    setImage(e.target.files[0]);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setProfilePictureUrl(e.target.result);
+    };
+    reader.readAsDataURL(e.target.files[0]);
+  };
 
   const generateQRCode = async () => {
-    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nModule Leader Email: ${moduleLeaderEmail}\nModule Leader Name: ${moduleLeaderName}\nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}`;
+    const qrCodeData = `Date and Time: ${dateAndTime.toISOString()}\nExam Room: ${examRoom}\nFaculty: ${faculty}\nFirst Name: ${firstName}\nLast Name: ${lastName}\nModule Leader Email: ${moduleLeaderEmail}\nModule Leader Name: ${moduleLeaderName}\nModule Name: ${moduleName}\nPhone Number: ${phoneNumber}\nRoom: ${room}\nStudent Email: ${studentEmail}\nStudent ID Number: ${studentIDNumber}\nTable: ${table}\nProfile Picture: ${studentIDNumber}`;
     const qrCodeImage = await QRCode.toDataURL(qrCodeData);
     return qrCodeImage;
   };
@@ -81,11 +91,11 @@ const ScheduleForm = () => {
     const qrCodeImage = await generateQRCode();
     const firestore = getFirestore();
     const storage = getStorage();
-
+  
     // Upload image to Firebase Storage
     const imageRef = ref(storage, `profile_picturesssss/${studentIDNumber}.jpg`);
     await uploadBytes(imageRef, image);
-
+  
     const userDocRef = await addDoc(collection(firestore, "users"), {
       dateAndTime: dateAndTime.toISOString(),
       examRoom,
@@ -102,11 +112,12 @@ const ScheduleForm = () => {
       table,
       qrCodeImage,
       profilePicture: `profile_picturesssss/${studentIDNumber}.jpg`, // Store image path in Firestore
+      profilePictureUrl: profilePictureUrl, // Store profile picture URL in Firestore
     });
-
+  
     const storageRef = ref(storage, userDocRef.id);
     await uploadString(storageRef, qrCodeImage, "data_url");
-
+  
     // Sending email with input data and image
     const emailData = {
       to: studentEmail,
@@ -128,7 +139,7 @@ const ScheduleForm = () => {
         },
       ],
     };
-
+  
     try {
       // Send email
       await axios.post("http://localhost:3001/send-email", emailData);
@@ -297,13 +308,22 @@ const ScheduleForm = () => {
               type="file"
               id="image"
               accept="image/*"
-              onChange={(e) => setImage(e.target.files[0])}
+              onChange={handleImageChange}
             />
+            {profilePictureUrl && (
+              <img
+                src={profilePictureUrl}
+                alt="Profile Picture"
+                className="w-24 h-24 object-cover rounded-full mt-2"
+              />
+            )}
           </div>
         </div>
         <div className="flex justify-center">
-          <button type="submit" 
-          className="w-full bg-blue-500 text-white rounded-md">
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white rounded-md"
+          >
             Schedule Exam
           </button>
         </div>
